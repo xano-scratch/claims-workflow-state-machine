@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claims Workflow State Machine · XanoTS template</title>
+    <meta
+      name="description"
+      content="A governed insurance claims backend: an enforced state machine, API-layer RBAC, per-role reserve limits, and a readable audit trail. Built with XanoTS."
+    />
+    <style>
+      :root {
+        --bg: #0a0a0b;
+        --panel: #141416;
+        --panel-2: #1b1b1f;
+        --border: #2a2a30;
+        --fg: #f4f4f5;
+        --muted: #a1a1aa;
+        --accent: #a78bfa;
+        --accent-2: #7c9cf5;
+        --ok: #34d399;
+        --danger: #f87171;
+        --amber: #fbbf24;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: radial-gradient(1200px 600px at 50% -10%, #1a1a22 0%, var(--bg) 55%);
+        color: var(--fg);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+      a { color: var(--accent); text-decoration: none; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+      header.hero { padding: 72px 0 32px; text-align: center; }
+      .badge-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+      .badge {
+        display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+        padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border);
+        background: var(--panel); color: var(--muted);
+      }
+      .badge.accent { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+      h1 { font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 14px; }
+      .tagline { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 auto; }
+      .meta { margin: 22px 0 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .meta strong { color: var(--fg); font-weight: 600; }
+
+      .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600;
+        padding: 11px 20px; border-radius: 10px; border: 1px solid transparent; cursor: pointer;
+        transition: transform .04s ease, background .15s ease, border-color .15s ease;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn.primary { background: var(--accent); color: #17131f; }
+      .btn.primary:hover { background: color-mix(in oklab, var(--accent) 88%, white); }
+      .btn.ghost { background: transparent; color: var(--fg); border-color: var(--border); }
+      .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+      .shot { margin: 40px auto 8px; }
+      .shot img {
+        width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border);
+        box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      }
+      .shot figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
+
+      section { padding: 40px 0; border-top: 1px solid var(--border); }
+      section:first-of-type { border-top: none; }
+      h2 { font-size: 26px; letter-spacing: -0.01em; margin: 0 0 8px; }
+      .lead { color: var(--muted); margin: 0 0 24px; max-width: 680px; }
+
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 34px; } }
+      .card {
+        background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px;
+      }
+      .card h3 { margin: 0 0 6px; font-size: 16px; }
+      .card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+      pre.diagram, pre.code {
+        background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
+        padding: 18px 20px; overflow-x: auto; font-size: 13.5px; color: var(--fg); margin: 0;
+      }
+      pre.diagram { color: var(--muted); }
+
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+      td code { color: var(--accent-2); font-size: 13px; }
+      .verb { font-weight: 700; font-size: 12px; color: var(--muted); }
+
+      ul.screens { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+      ul.screens li { padding-left: 18px; position: relative; color: var(--muted); }
+      ul.screens li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+      ul.screens strong { color: var(--fg); }
+
+      .use { display: flex; flex-direction: column; gap: 14px; }
+      .copy-row { position: relative; }
+      .copy-btn {
+        position: absolute; top: 10px; right: 10px; font-size: 12px; font-weight: 600;
+        background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+        border-radius: 7px; padding: 5px 10px; cursor: pointer;
+      }
+      .copy-btn:hover { color: var(--fg); border-color: var(--accent); }
+
+      .note {
+        background: color-mix(in oklab, var(--amber) 10%, var(--panel));
+        border: 1px solid color-mix(in oklab, var(--amber) 30%, var(--border));
+        color: #f6e6c4; border-radius: 12px; padding: 14px 18px; font-size: 14px;
+      }
+      footer { padding: 36px 0 60px; color: var(--muted); font-size: 13px; text-align: center; border-top: 1px solid var(--border); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <div class="badge-row">
+          <span class="badge accent">Play 2 · Backend Modernization</span>
+          <span class="badge">Insurance</span>
+          <span class="badge">XanoTS template</span>
+        </div>
+        <h1>Claims Workflow State Machine</h1>
+        <p class="tagline">
+          A governed insurance claims backend. Each claim moves through an enforced state machine,
+          illegal transitions and over-limit approvals are blocked at the API layer, and every move
+          is written to a readable audit trail.
+        </p>
+        <p class="meta"><strong>5 tables</strong> · <strong>9 API endpoints</strong> · <strong>3 API groups</strong></p>
+
+        <div class="hero-actions">
+          <a class="btn primary" href="https://github.com/xano-scratch/claims-workflow-state-machine">View on GitHub</a>
+          <a class="btn ghost" href="#use">Use this template</a>
+        </div>
+      </header>
+
+      <figure class="shot">
+        <img src="screenshot.png" alt="An adjuster is blocked with a 403 when approving a claim over their reserve limit, next to the claim's full transition audit trail." />
+        <figcaption>An adjuster is blocked at the API layer when approving over their reserve limit, beside the claim's audit trail.</figcaption>
+      </figure>
+
+      <section>
+        <h2>What it demonstrates</h2>
+        <p class="lead">
+          It stands in for the legacy claims stack a carrier runs today, in one governed backend a platform
+          director can read. Four things a technical evaluator cares about:
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Real relationships</h3>
+            <p>Policies, claims, an immutable audit log, per-role reserve limits, and an auth table, wired with foreign keys.</p>
+          </div>
+          <div class="card">
+            <h3>API-layer RBAC</h3>
+            <p>A token carries the caller role, and each endpoint checks it with a precondition. Permissions live in the API layer, never in a row-level policy.</p>
+          </div>
+          <div class="card">
+            <h3>A readable state machine</h3>
+            <p>One endpoint is the engine. It checks the legal edge, then the role, then the reserve limit, and the first failure returns a 403 that names the rule.</p>
+          </div>
+          <div class="card">
+            <h3>A trigger-quality audit log</h3>
+            <p>Every move and every assignment appends one row. The claim detail renders the ordered trail with who did what and when.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>The state machine</h2>
+        <p class="lead">Three guards run in order on every transition, and the first to fail wins.</p>
+        <pre class="diagram">submitted ─▶ in_review ─▶ approved ─▶ paid
+     │            │
+     └────────────┴─▶ denied
+
+1. legal edge    the target is an allowed next state (submitted ▷ paid is refused)
+2. role          a manager may do any legal move; an adjuster cannot mark paid; a viewer is read-only
+3. reserve limit an approval must sit at or under the caller role's approval cap</pre>
+      </section>
+
+      <section>
+        <h2>API surface</h2>
+        <p class="lead">Nine endpoints across three groups. The canonical slugs are namespaced (<code>cwsm</code>) to stay unique on a shared instance.</p>
+        <table>
+          <thead><tr><th>Method</th><th>Path</th><th>What it enforces</th></tr></thead>
+          <tbody>
+            <tr><td class="verb">POST</td><td><code>/api:cwsm_auth/login</code></td><td>Verifies credentials, mints a Bearer token carrying the role.</td></tr>
+            <tr><td class="verb">POST</td><td><code>/api:cwsm_claims/file</code></td><td>Policy must be active, amount within coverage. Writes the first audit row.</td></tr>
+            <tr><td class="verb">POST</td><td><code>/api:cwsm_claims/transition</code></td><td>Legal edge, then role, then reserve limit. Appends an audit row on pass.</td></tr>
+            <tr><td class="verb">POST</td><td><code>/api:cwsm_claims/assign</code></td><td>Claims manager only. The assignee must have the adjuster role.</td></tr>
+            <tr><td class="verb">GET</td><td><code>/api:cwsm_claims/get/{claim_id}</code></td><td>One claim joined to its policy, adjuster, and full audit trail.</td></tr>
+            <tr><td class="verb">GET</td><td><code>/api:cwsm_claims/list</code></td><td>The queue view, optionally filtered by state.</td></tr>
+            <tr><td class="verb">GET</td><td><code>/api:cwsm_claims/policies</code></td><td>Every policy, for the file-a-claim form.</td></tr>
+            <tr><td class="verb">GET</td><td><code>/api:cwsm_claims/adjusters</code></td><td>The assignable adjuster directory.</td></tr>
+            <tr><td class="verb">POST</td><td><code>/api:cwsm_seed/reset</code></td><td>Public. Truncates and reseeds the demo fixture.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Frontend screens</h2>
+        <ul class="screens">
+          <li><strong>Sign-in and role picker.</strong> Pick a seeded account to see the role differences from the first click.</li>
+          <li><strong>Claims queue.</strong> A list filtered by state, showing claimant, amount, state, and assigned adjuster.</li>
+          <li><strong>Claim detail.</strong> The allowed next-state buttons for the current role, the manager assign control, the full audit trail, and a 403 that surfaces the exact rule that blocked a move.</li>
+          <li><strong>File a claim.</strong> A short form that creates a submitted claim against an active policy.</li>
+        </ul>
+      </section>
+
+      <section id="use">
+        <h2>Use this template</h2>
+        <p class="lead">Point your coding agent at the repo and adapt it to your domain. Keep the API-layer RBAC, the enforced state machine, and the audit trail.</p>
+        <div class="use">
+          <div class="copy-row">
+            <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+            <pre class="code" id="prompt">I want to build on the "Claims Workflow State Machine" XanoTS template.
+
+Clone it and use it as the starting point:
+https://github.com/xano-scratch/claims-workflow-state-machine
+
+Read the README and the xano/ backend, then help me adapt the tables,
+endpoints, and state machine to my domain: &lt;describe it here&gt;.
+Keep the API-layer RBAC, the enforced state machine, and the audit trail.
+Deploy it with `npm run xano:deploy`.</pre>
+          </div>
+          <p class="note">
+            Live preview links are ephemeral and expire, so this page does not host one. The repo is the durable
+            artifact: clone it and run <code>npm run xano:deploy</code> for a fresh live URL of your own.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        MIT licensed. Built with XanoTS (<code>@xanots/sdk</code>): a typed Xano backend in TypeScript, plus a React and Vite frontend.
+      </footer>
+    </div>
+
+    <script>
+      function copyPrompt() {
+        var el = document.getElementById("prompt");
+        var text = el.innerText || el.textContent || "";
+        navigator.clipboard && navigator.clipboard.writeText(text);
+        var btn = document.querySelector(".copy-btn");
+        if (btn) { var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = t; }, 1400); }
+      }
+    </script>
+  </body>
+</html>
